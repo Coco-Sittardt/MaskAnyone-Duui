@@ -29,6 +29,11 @@ colors = [
 ]
 
 
+@router.get("/ping")
+async def ping():
+    return {"status": "ok"}
+
+
 @router.post("/segment-image")
 async def segment_image(
     pose_prompts = Form(...),

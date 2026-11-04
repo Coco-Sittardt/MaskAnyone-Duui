@@ -1,4 +1,5 @@
 import os
+import pickle
 import requests
 import json
 import io
@@ -9,6 +10,13 @@ class Sam2Client:
 
     def __init__(self, base_path: str):
         self._base_path = base_path
+        # // make ping request to check if the server is reachable
+        try:
+            response = requests.get(self._make_url("ping"))
+            if response.status_code != 200:
+                raise ConnectionError(f"Error: Unable to reach SAM2 server at {self._base_path}. Status code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Error: Unable to reach SAM2 server at {self._base_path}. Exception: {e}")
 
     def segment_video(self, pose_prompts, video_content):
         files = {
@@ -19,17 +27,21 @@ class Sam2Client:
             'pose_prompts': json.dumps(pose_prompts),
         }
 
+        print(f"Sending request to {self._make_url('segment-video')} with pose_prompts: {pose_prompts}")
+
         response = requests.post(
             self._make_url("segment-video"),
             files=files,
             data=data,
         )
 
+        print(f"Received response with status code: {response.status_code}")
+
         return response.content
 
     def decode_mask_npz_content(self, content):
         buffer = io.BytesIO(content)
-        loaded = np.load(buffer)
+        loaded = pickle.load(buffer)
 
         masks = {}
         for key in loaded.files:

@@ -1,8 +1,9 @@
-
 services:
   cli:
     build:
       context: ./docker/worker
+    networks:
+      - maskanyone
     command: "python cli.py"
     env_file:
       - ./app.env
@@ -17,7 +18,13 @@ services:
   sam2:
     build:
       context: ./docker/sam2
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    # Host-Port 8086 leitet auf Container-Port 8000 weiter
+    ports:
+      - "8086:8000"
+    networks:
+      - maskanyone
+    # Uvicorn lauscht intern auf Port 8000 (passend zum CLI-Skript)
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port 8000 --root-path /api"
     env_file:
       - ./app.env
     volumes:
@@ -30,7 +37,7 @@ services:
             - driver: nvidia
               device_ids: ["${MASKANYONE_GPU_ID:-0}"]
               capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
+    # devices:
     #   - /dev/nvidia0:/dev/nvidia0
     #   - /dev/nvidiactl:/dev/nvidiactl
     #   - /dev/nvidia-uvm:/dev/nvidia-uvm
@@ -39,7 +46,13 @@ services:
   openpose:
     build:
       context: ./docker/openpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    # Host-Port 8083 leitet auf Container-Port 8000 weiter
+    ports:
+      - "8083:8000"
+    networks:
+      - maskanyone
+    # Uvicorn lauscht intern auf Port 8000
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port 8000 --root-path /api/"
     env_file:
       - ./app.env
     volumes:
@@ -53,8 +66,12 @@ services:
             - driver: nvidia
               device_ids: ["${MASKANYONE_GPU_ID:-0}"]
               capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+
+networks:
+  maskanyone:
+    driver: bridge

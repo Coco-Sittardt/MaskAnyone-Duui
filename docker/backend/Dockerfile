@@ -17,4 +17,4 @@ RUN mkdir /backend_models \
     && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m-pose.pt \
         -O /backend_models/yolo11m-pose.pt
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3365"]
